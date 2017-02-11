@@ -3,34 +3,53 @@ package main
 import (
 	"log"
 	"net/http"
-	"strings"
+/*	"strings"*/
 	"flag"
 	"github.com/google/go-github/github"
 	"fmt"
 	"html/template"
 )
 
-
-type Content struct{
-	Path string
-	Synopsis string
-	Language string
-	Length float64
-	GitHubFullName string
-}
-
 func request(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("method:", r.Method) //get request method
-	if r.Method == "GET" {
-		t, _ := template.ParseFiles("index.html")
-		t.Execute(w, nil)
-	} else {
-		r.ParseForm()
-		// logic part of log in
-		fmt.Println("language: ", r.Form["language"])
+
+	t, _ := template.ParseFiles("index.html")
+	t.Execute(w, nil)
 	}
 
+func search(w http.ResponseWriter, r *http.Request) {
+
+	r.ParseForm()
+	// logic part of log in
+	fmt.Println("language: ", r.Form["language"])
+/*	language := strings.Join(r.Form["language"], "")*/
+	client := github.NewClient(nil)
+
+	fmt.Println("Repos that contain the query language.")
+
+	/*query := fmt.Sprintf("language:" +  language)*/
+
+	opt := &github.RepositoryListAllOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+	// get all pages of results
+	var allRepos []*github.Repository
+	repos, _, _ := client.Repositories.ListAll(opt)
+
+	allRepos = append(allRepos, repos...)
+	for _, repo := range allRepos {
+
+		fmt.Println("repo: ", *repo.FullName)
+		fmt.Println("owner: ", *repo.Owner.Login)
+
+
+	}
+
+
+
+	t, _ := template.ParseFiles("result.html")
+	t.Execute(w, nil)
 }
+
 
 func main() {
 
@@ -38,39 +57,7 @@ func main() {
 	port := flag.String("port", "3000", "server port number")
 
 	http.HandleFunc("/", request)
-
-	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
-
-		language := strings.TrimSpace(r.URL.Query().Get("language"))
-
-
-		if language != "" {
-
-			log.Println("Query: ", language)
-		}
-
-		client := github.NewClient(nil)
-
-		fmt.Println("Repos that contain the query language.")
-
-		query := fmt.Sprintf("language:"+language)
-
-		opts := &github.SearchOptions{
-			Sort: "stars",
-			ListOptions: github.ListOptions{
-				PerPage: 100,
-			},
-		}
-
-		repos, _, err := client.Search.Repositories(query, opts)
-
-		if err != nil {
-			fmt.Printf("error: %v\n\n", err)
-		} else {
-			fmt.Printf("%v\n\n", github.Stringify(repos))
-		}
-
-	})
+	http.HandleFunc("/search", search)
 
 	log.Println("Listening on :" + *port)
 	//manage request
