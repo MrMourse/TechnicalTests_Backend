@@ -1,41 +1,41 @@
 package main
 
 import (
-	"io"
+	"log"
 	"net/http"
+	"fmt"
+	"html/template"
 )
 
-func hello(w http.ResponseWriter,r *http.Request){
-	io.WriteString(w,"Hello world !")
+func Home( w http.ResponseWriter, req *http.Request){
+	render(w,"index.html")
+}
+func Search( w http.ResponseWriter, req *http.Request){
+	render(w, "result.html")
 }
 
-var mux map[string]func(http.ResponseWriter, *http.Request)
-
-type myHandler struct{}
-
-
-func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
-	if h, ok := mux[r.URL.String()]; ok{
-		h(w,r)
-		return
+func render(w http.ResponseWriter, tmpl string){
+	tmpl =  fmt.Sprintf("templates/%s", tmpl)
+	t, err := template.ParseFiles(tmpl)
+	if err != nil {
+		log.Print("template parsing error: ", err)
 	}
-
-	io.WriteString(w , "My server: "+ r.URL.String())
+	err = t.Execute(w, "")
+	if err!= nil {
+		log.Print("template executing error: ", err)
+	}
 }
-
 
 func main() {
 
-	server := http.Server{
-		Addr: ":8000",
-		Handler: &myHandler{},
-	}
-
-	mux = make(map[string]func(http.ResponseWriter, *http.Request))
-	mux["/"] = hello
-
+	http.HandleFunc("/", Home)
+	http.HandleFunc("/search", Search)
 	//manage request
-	server.ListenAndServe()
+	log.Println("Listenning...")
+	err := http.ListenAndServe(":3001", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 
 
 }
