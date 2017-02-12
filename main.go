@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 	"strings"
+	"strconv"
 )
 
 
@@ -32,10 +33,13 @@ func gather(repo *github.Repository, client *github.Client, out chan repos_hash)
 		fmt.Println(err)
 	}
 	repos_tmp.hashtable = res
-	repos_tmp.url = *repo.URL
+	repos_tmp.url = *repo.HTMLURL
 
 	out <- repos_tmp
 }
+
+
+
 
 func search(w http.ResponseWriter, r *http.Request) {
 	/*Get the form content*/
@@ -72,21 +76,42 @@ func search(w http.ResponseWriter, r *http.Request) {
 	result := make([]repos_hash, len(allRepos))
 	for i := 0; i < len(allRepos); i++ {
 		result[i] = <-reposChan
-		fmt.Println(result[i])
+		/*fmt.Println(result[i])*/
 	}
 
 	total :=0
 	for _,elmt:=range result  {
 		if (elmt.hashtable[language]>0){
 			total += elmt.hashtable[language]
-		fmt.Printf("elmt :%s\n",elmt.url)
-		fmt.Printf("number of %s : %d\n",language,elmt.hashtable[language])
 		}
 	}
-	fmt.Printf("%s : %d",language,total)
+	/*fmt.Printf("%s : %d",language,total)*/
+
+
 
 	t, _ := template.ParseFiles("result.html")
-	t.Execute(w, nil)
+	tplVars := map[string]string{
+		"Title" : "Résultat",
+		"Language":language,
+		"result": strconv.Itoa(total),
+	}
+
+	t.Execute(w, tplVars)
+	for _,elmt:=range result  {
+		if (elmt.hashtable[language]>0){
+			t, _ := template.ParseFiles("data.html")
+			tplVars2 := map[string]string{
+				"url": elmt.url,
+				"name":elmt.url,
+				"number": strconv.Itoa(elmt.hashtable[language]),
+			}
+			t.Execute(w, tplVars2)
+		}
+	}
+
+	u, _ := template.ParseFiles("footer.html")
+	u.Execute(w, nil)
+
 }
 
 
