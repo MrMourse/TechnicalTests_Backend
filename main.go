@@ -16,8 +16,10 @@ import (
 
 func request(w http.ResponseWriter, r *http.Request) {
 
-	t, _ := template.ParseFiles("index.html")
+	t, _ := template.ParseFiles("head.html")
 	t.Execute(w, nil)
+	u, _ := template.ParseFiles("footer.html")
+	u.Execute(w, nil)
 }
 
 type repos_hash struct{
@@ -45,8 +47,8 @@ func search(w http.ResponseWriter, r *http.Request) {
 	/*Get the form content*/
 	r.ParseForm()
 	// logic part of log in
-	fmt.Println("language: ", r.Form["language"])
-	language := strings.Join(r.Form["language"], "")
+	fmt.Println("language: ", r.Form["Search"])
+	language := strings.Join(r.Form["Search"], "")
 
 	//start the query on github
 	ts := oauth2.StaticTokenSource(
@@ -88,22 +90,23 @@ func search(w http.ResponseWriter, r *http.Request) {
 	/*fmt.Printf("%s : %d",language,total)*/
 
 
+	//Print the page
 
-	t, _ := template.ParseFiles("result.html")
+	t, _ := template.ParseFiles("head.html")
 	tplVars := map[string]string{
-		"Title" : "Résultat",
-		"Language":language,
-		"result": strconv.Itoa(total),
+		"Title" : "Result",
+		"Language" : language,
+		"result": " total : "+strconv.Itoa(total)+" lines",
 	}
-
 	t.Execute(w, tplVars)
+
 	for _,elmt:=range result  {
 		if (elmt.hashtable[language]>0){
 			t, _ := template.ParseFiles("data.html")
 			tplVars2 := map[string]string{
 				"url": elmt.url,
-				"name":elmt.url,
-				"number": strconv.Itoa(elmt.hashtable[language]),
+				"name":"link of the github : "+elmt.url,
+				"number": strconv.Itoa(elmt.hashtable[language])+" lines",
 			}
 			t.Execute(w, tplVars2)
 		}
