@@ -24,19 +24,17 @@ type repos_hash struct{
 	hashtable map[string]int
 }
 
-func gather(allRepos []*github.Repository,client *github.Client) []repos_hash{
-	var result []repos_hash
+func gather(repo *github.Repository, client *github.Client, out chan repos_hash) {
 	var repos_tmp repos_hash
-	for _,repo := range allRepos {
-		//filter them
-		/*fmt.Printf( "repo_URL : %s \n",*repo.URL)*/
-		res, _, err := client.Repositories.ListLanguages(*repo.Owner.Login,*repo.Name)
-		if err != nil {fmt.Println(err)}
-		repos_tmp.hashtable = res
-		repos_tmp.url = *repo.URL
-		result= append(result,repos_tmp)
+	//filter them
+	res, _, err := client.Repositories.ListLanguages(*repo.Owner.Login, *repo.Name)
+	if err != nil {
+		fmt.Println(err)
 	}
-	return result
+	repos_tmp.hashtable = res
+	repos_tmp.url = *repo.URL
+
+	out <- repos_tmp
 }
 
 func search(w http.ResponseWriter, r *http.Request) {
@@ -62,13 +60,23 @@ func search(w http.ResponseWriter, r *http.Request) {
 	// get all pages of results
 	var allRepos []*github.Repository
 	repos, _, err := client.Repositories.ListAll(opt)
-	if (err !=nil) {
+	if err != nil {
 		fmt.Println(err)
 	}
 	allRepos = append(allRepos, repos...)
-	allres := gather(allRepos,client)
+	reposChan := make(chan repos_hash, len(allRepos))
+	for _, repo := range allRepos {
+		go gather(repo, client, reposChan)
+	}
+
+	result := make([]repos_hash, len(allRepos))
+	for i := 0; i < len(allRepos); i++ {
+		result[i] = <-reposChan
+		fmt.Println(result[i])
+	}
+
 	total :=0
-	for _,elmt:=range allres  {
+	for _,elmt:=range result  {
 		if (elmt.hashtable[language]>0){
 			total += elmt.hashtable[language]
 		fmt.Printf("elmt :%s\n",elmt.url)
@@ -76,6 +84,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	fmt.Printf("%s : %d",language,total)
+
 	t, _ := template.ParseFiles("result.html")
 	t.Execute(w, nil)
 }
