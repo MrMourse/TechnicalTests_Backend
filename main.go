@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
+	"strings"
 )
 
 
@@ -28,7 +29,7 @@ func gather(allRepos []*github.Repository,client *github.Client) []repos_hash{
 	var repos_tmp repos_hash
 	for _,repo := range allRepos {
 		//filter them
-		fmt.Printf( "repo_URL : %s \n",*repo.URL)
+		/*fmt.Printf( "repo_URL : %s \n",*repo.URL)*/
 		res, _, err := client.Repositories.ListLanguages(*repo.Owner.Login,*repo.Name)
 		if err != nil {fmt.Println(err)}
 		repos_tmp.hashtable = res
@@ -40,10 +41,10 @@ func gather(allRepos []*github.Repository,client *github.Client) []repos_hash{
 
 func search(w http.ResponseWriter, r *http.Request) {
 	/*Get the form content*/
-	/*r.ParseForm()
+	r.ParseForm()
 	// logic part of log in
 	fmt.Println("language: ", r.Form["language"])
-/*	language := strings.Join(r.Form["language"], "")*/
+	language := strings.Join(r.Form["language"], "")
 
 	//start the query on github
 	ts := oauth2.StaticTokenSource(
@@ -66,10 +67,15 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 	allRepos = append(allRepos, repos...)
 	allres := gather(allRepos,client)
+	total :=0
 	for _,elmt:=range allres  {
+		if (elmt.hashtable[language]>0){
+			total += elmt.hashtable[language]
 		fmt.Printf("elmt :%s\n",elmt.url)
+		fmt.Printf("number of %s : %d\n",language,elmt.hashtable[language])
+		}
 	}
-
+	fmt.Printf("%s : %d",language,total)
 	t, _ := template.ParseFiles("result.html")
 	t.Execute(w, nil)
 }
