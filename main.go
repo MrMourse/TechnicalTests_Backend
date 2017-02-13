@@ -135,7 +135,6 @@ func search(w http.ResponseWriter, r *http.Request) {
 		t.Execute(w, dataContent)
 		/*fmt.Println("Key:", k, "Value:", printres[k])*/
 	}
-
 	u, _ := template.ParseFiles("footer.html")
 	u.Execute(w, nil)
 
