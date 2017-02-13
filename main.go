@@ -13,7 +13,7 @@ import (
 )
 
 
-/*request print the header and the footer of the page without data*/
+// Request print the header and the footer of the page without data
 func request(w http.ResponseWriter, r *http.Request) {
 
 	t, _ := template.ParseFiles("head.html")
@@ -23,16 +23,16 @@ func request(w http.ResponseWriter, r *http.Request) {
 }
 
 
-/*structure which provides the url of the repository and the hashtable of the data language*/
+// Structure which provides the url of the repository and the hash_table of the data language
 type repos_hash struct{
 	url string
 	hashtable map[string]int
 }
 
-/* obtain the hashtable of languages and the html.url with githubAPI*/
+// Obtain the hash_table of languages and the html.url with GitHubAPI
 func gather(repo *github.Repository, client *github.Client, out chan repos_hash) {
 	var repos_tmp repos_hash
-	//filter them
+	// Gather them
 	res, _, err := client.Repositories.ListLanguages(*repo.Owner.Login, *repo.Name)
 	if err != nil {
 		fmt.Println(err)
@@ -45,13 +45,14 @@ func gather(repo *github.Repository, client *github.Client, out chan repos_hash)
 
 
 
-
+// Get the result of the post, get the 100 last repositories, take languages information, gathered them, print them
 func search(w http.ResponseWriter, r *http.Request) {
-	/*Get the form content*/
+
+	// Get the form content
 	r.ParseForm()
 	language := strings.Join(r.Form["Search"], "")
 
-	//start the query on github
+	// Start the query on github
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: "b1abf4e31f153ad21e19cf70dabce2310a731b1c"},
 	)
@@ -59,12 +60,12 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 	client := github.NewClient(tc)
 
-	//get the 100 last repositories
+	// Get the 100 last repositories
 	opt := &github.RepositoryListAllOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
-	// get all pages of results
+	// Get all pages of results
 	var allRepos []*github.Repository
 	repos, _, err := client.Repositories.ListAll(opt)
 	if err != nil {
@@ -72,18 +73,20 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 	allRepos = append(allRepos, repos...)
 	reposChan := make(chan repos_hash, len(allRepos))
-	/*get the languages information->by goroutine*/
+
+	// Get the languages information->by goroutine
 	for _, repo := range allRepos {
 		go gather(repo, client, reposChan)
 	}
-	/*gather the information->by channel*/
+
+	// Gather the information->by channel
 	result := make([]repos_hash, len(allRepos))
 
 	for i := 0; i < len(allRepos); i++ {
 		result[i] = <-reposChan
 	}
 
-	/*find the total of lines*/
+	// Find the total of lines
 	total :=0
 	for _,elmt:=range result  {
 		if (elmt.hashtable[language]>0){
@@ -92,7 +95,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 
 
-	//Print the page
+	// Print the page
 
 	t, _ := template.ParseFiles("head.html")
 	tplVars := map[string]string{
@@ -122,15 +125,16 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	//Port id initialization
+	// Port id initialization
 	port := flag.String("port", "3000", "server port number")
 
+	// Requests
 	http.HandleFunc("/", request)
 	http.HandleFunc("/search", search)
 
 	log.Println("Listening on :" + *port)
 
-	//manage request
+	// Manage request
 	log.Println("Listenning...")
 	err := http.ListenAndServe(":" + *port, nil)
 
