@@ -60,8 +60,14 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 	client := github.NewClient(tc)
 
+	// Get the last id
+	opts:= &github.SearchOptions{Order: "desc"}
+	repo, _, _ :=client.Search.Repositories(">2017-02-13",opts)
+	id:=*repo.Repositories[0].ID
+
 	// Get the 100 last repositories
 	opt := &github.RepositoryListAllOptions{
+		Since:id-100,
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
