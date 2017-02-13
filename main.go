@@ -98,22 +98,22 @@ func search(w http.ResponseWriter, r *http.Request) {
 	// Print the page
 
 	t, _ := template.ParseFiles("head.html")
-	tplVars := map[string]string{
+	headContent := map[string]string{
 		"Title" : "Result",
 		"Language" : language,
 		"result": " total : "+strconv.Itoa(total)+" lines",
 	}
-	t.Execute(w, tplVars)
+	t.Execute(w, headContent)
 
 	for _,elmt:=range result  {
 		if (elmt.hashtable[language]>0){
 			t, _ := template.ParseFiles("data.html")
-			tplVars2 := map[string]string{
+			dataContent := map[string]string{
 				"url": elmt.url,
 				"name":"link of the github : "+elmt.url,
 				"number": strconv.Itoa(elmt.hashtable[language])+" lines",
 			}
-			t.Execute(w, tplVars2)
+			t.Execute(w, dataContent)
 		}
 	}
 

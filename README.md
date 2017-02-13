@@ -30,3 +30,4 @@ It uses 4 files :
 
                 with the ServeAndListen method
 
+To use the application please be on localhost:3000/
