@@ -10,6 +10,7 @@ import (
 	"golang.org/x/oauth2"
 	"strings"
 	"strconv"
+	"sort"
 )
 
 
@@ -94,11 +95,17 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 	// Find the total of lines
 	total :=0
+	printres := make(map[int]string)
 	for _,elmt:=range result  {
 		if (elmt.hashtable[language]>0){
 			total += elmt.hashtable[language]
+			/*fmt.Printf("url :%s, number :%d\n",elmt.url,elmt.hashtable[language])*/
+			number := elmt.hashtable[language]
+			url := elmt.url
+			printres[number] = url
 		}
 	}
+
 
 
 	// Print the page
@@ -111,16 +118,22 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 	t.Execute(w, headContent)
 
-	for _,elmt:=range result  {
-		if (elmt.hashtable[language]>0){
-			t, _ := template.ParseFiles("data.html")
-			dataContent := map[string]string{
-				"url": elmt.url,
-				"name":"link of the github : "+elmt.url,
-				"number": strconv.Itoa(elmt.hashtable[language])+" lines",
-			}
-			t.Execute(w, dataContent)
+	// Sort data
+	var keys []int
+	for k := range printres {
+		keys = append(keys, k)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
+
+	for _, k := range keys {
+		t, _ := template.ParseFiles("data.html")
+		dataContent := map[string]string{
+			"url": printres[k],
+			"name":"link of the github : "+printres[k],
+			"number": strconv.Itoa(k)+" lines",
 		}
+		t.Execute(w, dataContent)
+		/*fmt.Println("Key:", k, "Value:", printres[k])*/
 	}
 
 	u, _ := template.ParseFiles("footer.html")
