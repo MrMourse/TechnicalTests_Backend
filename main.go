@@ -63,7 +63,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 	// Get the last id
 	opts:= &github.SearchOptions{Order: "desc"}
-	repo, _, _ :=client.Search.Repositories(">2017-02-13",opts)
+	repo, _, _ :=client.Search.Repositories(">=2017-02-13",opts)
 	id:=*repo.Repositories[0].ID
 
 	// Get the 100 last repositories
@@ -125,6 +125,8 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
 
+/*	var script = "["*/
+
 	for _, k := range keys {
 		t, _ := template.ParseFiles("data.html")
 		dataContent := map[string]string{
@@ -133,10 +135,23 @@ func search(w http.ResponseWriter, r *http.Request) {
 			"number": strconv.Itoa(k)+" lines",
 		}
 		t.Execute(w, dataContent)
+		// Gather information for script use
+/*		script+="{name:'"+printres[k]+"',y:"+strconv.FormatFloat(float64(100*k/total), 'f', 2, 64)+"},"*/
 		/*fmt.Println("Key:", k, "Value:", printres[k])*/
 	}
-	u, _ := template.ParseFiles("footer.html")
-	u.Execute(w, nil)
+
+		u, _ := template.ParseFiles("footer.html")
+
+		// Script for pie print
+/*		script=script[:len(script)-1]
+		script+="]"*/
+
+/*		scriptContent := map[string]template.JS{"script":template.JS(script)}*/
+		u.Execute(w, nil)//switch with scriptContent but the script doesn't work
+		/*fmt.Println("Key:", k, "Value:", printres[k])*/
+
+
+
 
 }
 
